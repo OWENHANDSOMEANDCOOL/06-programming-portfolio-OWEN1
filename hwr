@@ -1,139 +1,153 @@
 import tkinter as tk
 from tkinter import messagebox, ttk
 from datetime import datetime, timedelta
-import winsound  # สำหรับเสียงแจ้งเตือนบน Windows
+import winsound
 
 class HomeworkApp:
-    def __init__(self, root):
-        self.root = root
-        self.root.title("TaskMaster Pro - ระบบจัดการการบ้าน")
-        self.root.geometry("850x600")
-        self.root.configure(bg="#ffffff")
-        
-        self.homework_list = []
+    def __init__(self, root):
+        self.root = root
+        self.root.title("TaskMaster Pro - ระบบจัดการการบ้าน")
+        self.root.geometry("950x600") # ขยายหน้าจอนิดหน่อยรองรับคอลัมน์ใหม่
+        self.root.configure(bg="#ffffff")
+        
+        self.homework_list = []
 
-        # --- การตั้งค่า Style ---
-        style = ttk.Style()
-        style.theme_use("clam")
-        style.configure("Treeview", rowheight=35, font=("Leelawadee UI", 10), background="#ffffff", fieldbackground="#ffffff")
-        style.configure("Treeview.Heading", font=("Leelawadee UI", 10, "bold"), background="#f8f9fa")
-        
-        # --- Layout แบ่งหน้าจอเป็น 2 ฝั่ง (Main & Sidebar) ---
-        self.main_container = tk.Frame(self.root, bg="#ffffff")
-        self.main_container.pack(side="left", fill="both", expand=True)
-        
-        self.sidebar = tk.Frame(self.root, bg="#2c3e50", width=250)
-        self.sidebar.pack(side="right", fill="y")
-        self.sidebar.pack_propagate(False)
+        # --- การตั้งค่า Style ---
+        style = ttk.Style()
+        style.theme_use("clam")
+        style.configure("Treeview", rowheight=35, font=("Leelawadee UI", 10), background="#ffffff", fieldbackground="#ffffff")
+        style.configure("Treeview.Heading", font=("Leelawadee UI", 10, "bold"), background="#f8f9fa")
+        
+        # --- Layout ---
+        self.main_container = tk.Frame(self.root, bg="#ffffff")
+        self.main_container.pack(side="left", fill="both", expand=True)
+        
+        self.sidebar = tk.Frame(self.root, bg="#2c3e50", width=250)
+        self.sidebar.pack(side="right", fill="y")
+        self.sidebar.pack_propagate(False)
 
-        # --- ฝั่ง Main: ส่วนกรอกข้อมูลและตาราง ---
-        header = tk.Frame(self.main_container, bg="#ffffff", pady=20)
-        header.pack(fill="x")
-        tk.Label(header, text="Dashboard การบ้าน", font=("Leelawadee UI", 18, "bold"), bg="#ffffff", fg="#2c3e50").pack(anchor="w", padx=30)
+        # --- ฝั่ง Main ---
+        header = tk.Frame(self.main_container, bg="#ffffff", pady=20)
+        header.pack(fill="x")
+        tk.Label(header, text="Dashboard การบ้าน", font=("Leelawadee UI", 18, "bold"), bg="#ffffff", fg="#2c3e50").pack(anchor="w", padx=30)
 
-        input_area = tk.Frame(self.main_container, bg="#f8f9fa", padx=30, pady=20)
-        input_area.pack(fill="x", padx=30, pady=10)
+        # ส่วนกรอกข้อมูล (ปรับปรุงใหม่ให้มีหมวดหมู่)
+        input_area = tk.Frame(self.main_container, bg="#f8f9fa", padx=30, pady=20)
+        input_area.pack(fill="x", padx=30, pady=10)
 
-        tk.Label(input_area, text="ชื่องาน:", bg="#f8f9fa", font=("Leelawadee UI", 10)).grid(row=0, column=0, sticky="w")
-        self.entry_name = tk.Entry(input_area, width=35, font=("Leelawadee UI", 10), bd=1, relief="solid")
-        self.entry_name.grid(row=0, column=1, padx=10, pady=5)
+        # แถวที่ 1
+        tk.Label(input_area, text="ชื่องาน:", bg="#f8f9fa").grid(row=0, column=0, sticky="w")
+        self.entry_name = tk.Entry(input_area, width=30, font=("Leelawadee UI", 10), bd=1, relief="solid")
+        self.entry_name.grid(row=0, column=1, padx=10, pady=5)
 
-        tk.Label(input_area, text="จำนวนวัน:", bg="#f8f9fa", font=("Leelawadee UI", 10)).grid(row=0, column=2, sticky="w", padx=(20,0))
-        self.entry_days = tk.Entry(input_area, width=10, font=("Leelawadee UI", 10), bd=1, relief="solid")
-        self.entry_days.grid(row=0, column=3, padx=10, pady=5)
+        tk.Label(input_area, text="รูปแบบการส่ง:", bg="#f8f9fa").grid(row=0, column=2, sticky="w", padx=(10,0))
+        self.type_combo = ttk.Combobox(input_area, values=["ออนไลน์", "ส่งตัวจริง"], state="readonly", width=15)
+        self.type_combo.set("ออนไลน์") # ค่าเริ่มต้น
+        self.type_combo.grid(row=0, column=3, padx=10, pady=5)
 
-        self.btn_add = tk.Button(input_area, text="เพิ่มงานใหม่", command=self.add_homework, 
-                                 bg="#3498db", fg="white", font=("Leelawadee UI", 10, "bold"),
-                                 padx=20, relief="flat", cursor="hand2")
-        self.btn_add.grid(row=0, column=4, padx=20)
+        # แถวที่ 2
+        tk.Label(input_area, text="จำนวนวัน:", bg="#f8f9fa").grid(row=1, column=0, sticky="w")
+        self.entry_days = tk.Entry(input_area, width=10, font=("Leelawadee UI", 10), bd=1, relief="solid")
+        self.entry_days.grid(row=1, column=1, padx=10, pady=5, sticky="w")
 
-        # ตารางแสดงผล
-        self.tree = ttk.Treeview(self.main_container, columns=("Name", "Due", "Days"), show='headings')
-        self.tree.heading("Name", text=" รายการการบ้าน")
-        self.tree.heading("Due", text="กำหนดส่ง")
-        self.tree.heading("Days", text="เหลือเวลา")
-        self.tree.column("Name", width=250)
-        self.tree.column("Due", width=120, anchor="center")
-        self.tree.column("Days", width=100, anchor="center")
-        self.tree.pack(padx=30, pady=20, fill="both", expand=True)
-        
-        self.btn_del = tk.Button(self.main_container, text="ลบงานที่ทำเสร็จแล้ว", command=self.delete_homework,
-                                 bg="#ecf0f1", fg="#7f8c8d", font=("Leelawadee UI", 9), relief="flat")
-        self.btn_del.pack(pady=(0, 20))
+        self.btn_add = tk.Button(input_area, text="➕ เพิ่มงานใหม่", command=self.add_homework, 
+                                 bg="#3498db", fg="white", font=("Leelawadee UI", 10, "bold"),
+                                 padx=20, pady=5, relief="flat", cursor="hand2")
+        self.btn_add.grid(row=1, column=3, padx=10, pady=5, sticky="e")
 
-        # --- ฝั่ง Sidebar: ระบบแจ้งเตือน ---
-        tk.Label(self.sidebar, text="🔔 แจ้งเตือนด่วน", font=("Leelawadee UI", 12, "bold"), 
-                 bg="#2c3e50", fg="#e74c3c", pady=20).pack()
-        
-        self.alert_box = tk.Text(self.sidebar, bg="#34495e", fg="#ecf0f1", font=("Leelawadee UI", 9),
-                                 bd=0, padx=15, pady=10, state="disabled")
-        self.alert_box.pack(fill="both", expand=True, padx=10, pady=10)
+        # ตารางแสดงผล (เพิ่มคอลัมน์ Type)
+        self.tree = ttk.Treeview(self.main_container, columns=("Name", "Type", "Due", "Days"), show='headings')
+        self.tree.heading("Name", text=" รายการการบ้าน")
+        self.tree.heading("Type", text="รูปแบบการส่ง")
+        self.tree.heading("Due", text="กำหนดส่ง")
+        self.tree.heading("Days", text="เหลือเวลา")
+        
+        self.tree.column("Name", width=200)
+        self.tree.column("Type", width=120, anchor="center")
+        self.tree.column("Due", width=120, anchor="center")
+        self.tree.column("Days", width=100, anchor="center")
+        self.tree.pack(padx=30, pady=20, fill="both", expand=True)
+        
+        self.btn_del = tk.Button(self.main_container, text="ลบงานที่ทำเสร็จแล้ว", command=self.delete_homework,
+                                 bg="#ecf0f1", fg="#7f8c8d", font=("Leelawadee UI", 9), relief="flat")
+        self.btn_del.pack(pady=(0, 20))
 
-    def play_alert_sound(self):
-        # เสียงบี๊บเบาๆ (Frequency, Duration)
-        winsound.Beep(1000, 200)
+        # --- ฝั่ง Sidebar ---
+        tk.Label(self.sidebar, text="🔔 แจ้งเตือนด่วน", font=("Leelawadee UI", 12, "bold"), 
+                 bg="#2c3e50", fg="#e74c3c", pady=20).pack()
+        
+        self.alert_box = tk.Text(self.sidebar, bg="#34495e", fg="#ecf0f1", font=("Leelawadee UI", 10),
+                                 bd=0, padx=15, pady=10, state="disabled")
+        self.alert_box.pack(fill="both", expand=True, padx=10, pady=10)
 
-    def add_homework(self):
-        name = self.entry_name.get()
-        days_str = self.entry_days.get()
+    def play_alert_sound(self):
+        winsound.Beep(1000, 200)
 
-        if not name or not days_str:
-            return
+    def add_homework(self):
+        name = self.entry_name.get()
+        days_str = self.entry_days.get()
+        hw_type = self.type_combo.get()
 
-        try:
-            days_left = int(days_str)
-            due_date = datetime.now() + timedelta(days=days_left)
-            
-            self.homework_list.append({
-                "name": name, "due_obj": due_date,
-                "due_str": due_date.strftime("%d/%m/%Y"),
-                "days_left": days_left
-            })
+        if not name or not days_str:
+            messagebox.showwarning("Warning", "กรุณากรอกข้อมูลให้ครบถ้วน")
+            return
 
-            if days_left <= 2:
-                self.play_alert_sound()
+        try:
+            days_left = int(days_str)
+            due_date = datetime.now() + timedelta(days=days_left)
+            
+            # เพิ่มสัญลักษณ์หน้าประเภท
+            display_type = f"🌐 {hw_type}" if hw_type == "ออนไลน์" else f"📝 {hw_type}"
 
-            self.entry_name.delete(0, tk.END)
-            self.entry_days.delete(0, tk.END)
-            self.refresh_ui()
+            self.homework_list.append({
+                "name": name, 
+                "type": display_type,
+                "due_obj": due_date,
+                "due_str": due_date.strftime("%d/%m/%Y"),
+                "days_left": days_left
+            })
 
-        except ValueError:
-            messagebox.showerror("Error", "กรุณาใส่ตัวเลขในช่องจำนวนวัน")
+            if days_left <= 2:
+                self.play_alert_sound()
 
-    def refresh_ui(self):
-        # ล้างตาราง
-        for item in self.tree.get_children():
-            self.tree.delete(item)
+            self.entry_name.delete(0, tk.END)
+            self.entry_days.delete(0, tk.END)
+            self.refresh_ui()
 
-        # เรียงลำดับ
-        self.homework_list.sort(key=lambda x: x['due_obj'])
+        except ValueError:
+            messagebox.showerror("Error", "กรุณาใส่ตัวเลขในช่องจำนวนวัน")
 
-        # อัปเดตตารางและสร้างข้อความแจ้งเตือน
-        urgent_list = []
-        for hw in self.homework_list:
-            status_text = f"{hw['days_left']} วัน"
-            self.tree.insert("", tk.END, values=(hw['name'], hw['due_str'], status_text))
-            
-            if hw['days_left'] <= 2:
-                urgent_list.append(f"• {hw['name']}\n  (อีก {hw['days_left']} วัน!)")
+    def refresh_ui(self):
+        for item in self.tree.get_children():
+            self.tree.delete(item)
 
-        # อัปเดต Sidebar
-        self.alert_box.config(state="normal")
-        self.alert_box.delete("1.0", tk.END)
-        if urgent_list:
-            self.alert_box.insert(tk.END, "\n\n".join(urgent_list))
-        else:
-            self.alert_box.insert(tk.END, "ไม่มีงานด่วนจ้า ✨")
-        self.alert_box.config(state="disabled")
+        self.homework_list.sort(key=lambda x: x['due_obj'])
 
-    def delete_homework(self):
-        selected = self.tree.selection()
-        if selected:
-            name_to_del = self.tree.item(selected)['values'][0]
-            self.homework_list = [hw for hw in self.homework_list if hw['name'] != name_to_del]
-            self.refresh_ui()
+        urgent_list = []
+        for hw in self.homework_list:
+            status_text = f"{hw['days_left']} วัน"
+            self.tree.insert("", tk.END, values=(hw['name'], hw['type'], hw['due_str'], status_text))
+            
+            if hw['days_left'] <= 2:
+                urgent_list.append(f"• {hw['name']}\n  ({hw['type']})\n  เหลือ {hw['days_left']} วัน!")
+
+        self.alert_box.config(state="normal")
+        self.alert_box.delete("1.0", tk.END)
+        if urgent_list:
+            self.alert_box.insert(tk.END, "\n\n".join(urgent_list))
+        else:
+            self.alert_box.insert(tk.END, "ไม่มีงานด่วนจ้า ✨")
+        self.alert_box.config(state="disabled")
+
+    def delete_homework(self):
+        selected = self.tree.selection()
+        if selected:
+            # ใช้คอลัมน์ชื่อในการค้นหาเพื่อลบ (ถ้าชื่อซ้ำอาจจะมีปัญหาเล็กน้อยในระบบตัวอย่างนี้)
+            name_to_del = self.tree.item(selected)['values'][0]
+            self.homework_list = [hw for hw in self.homework_list if hw['name'] != name_to_del]
+            self.refresh_ui()
 
 if __name__ == "__main__":
-    root = tk.Tk()
-    app = HomeworkApp(root)
-    root.mainloop()
+    root = tk.Tk()
+    app = HomeworkApp(root)
+    root.mainloop()
