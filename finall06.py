@@ -1,0 +1,38 @@
+print("=== โปรแกรมคำนวณเกรด ===")
+print("พิมพ์ 'exit' เมื่อต้องการออกจากโปรแกรม")
+
+while True:
+    user_input = input("กรุณากรอกคะแนนของคุณ (0-100) หรือ 'exit': ")
+
+    if user_input.lower() == 'exit':
+        print("ออกจากโปรแกรม.")
+        break
+
+    try:
+        score = int(user_input)
+
+        if not (0 <= score <= 100):
+            print(" คะแนนต้องอยู่ในช่วง 0 ถึง 100 เท่านั้น")
+            continue
+
+        grade_description = ""
+        if score >= 80:
+            grade = "A"
+            grade_description = "ยอดเยี่ยม"
+        elif score >= 70:
+            grade = "B"
+            grade_description = "ดีมาก"
+        elif score >= 60:
+            grade = "C"
+            grade_description = "พอใช้"
+        elif score >= 50:
+            grade = "D"
+            grade_description = "ผ่านเกณฑ์"
+        else:
+            grade = "F"
+            grade_description = "ไม่ผ่าน"
+
+        print(f" คะแนนของคุณคือ {score} ได้เกรด {grade} ({grade_description})")
+
+    except ValueError:
+        print(" กรุณาป้อนข้อมูลเป็นตัวเลขที่ถูกต้อง หรือพิมพ์ 'exit'")
